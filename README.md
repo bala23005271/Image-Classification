@@ -6,83 +6,223 @@ To Develop a convolutional deep neural network for image classification and to v
 
 ## Problem Statement and Dataset
 
-Include the Problem Statement and Dataset.
+The objective of this project is to create a CNN that can categorize images of fashion items from the Fashion MNIST dataset. This dataset includes grayscale images of clothing and accessories such as T-shirts, trousers, dresses, and footwear. The task is to accurately predict the correct category for each image while ensuring the model is efficient and robust.
+
+1.Training data: 60,000 images
+
+2.Test data: 10,000 images
+
+3.Classes: 10 fashion categories
+
+The CNN consists of multiple convolutional layers with activation functions, followed by pooling layers, and ends with fully connected layers to output predictions for all 10 categories.
 
 ## Neural Network Model
 
-Include the neural network model diagram.
+<img width="1183" height="467" alt="425547172-cb131631-9bba-4dc8-a3c8-dd7a9b3c98ba" src="https://github.com/user-attachments/assets/4bb8cd96-bf53-4665-9f77-25e96fec1121" />
 
 ## DESIGN STEPS
 
 ### STEP 1:
-Write your own steps
+Import the necessary libraries such as NumPy, Matplotlib, and PyTorch.
 
 ### STEP 2:
+Load and preprocess the dataset:
 
+Resize images to a fixed size (128×128).
+Normalize pixel values to a range between 0 and 1.
+Convert labels into numerical format if necessary.
 ### STEP 3:
+Define the CNN Architecture, which includes:
 
+Input Layer: Shape (8,128,128)
+Convolutional Layer 1: 8 filters, kernel size (16×16), ReLU activation
+Max-Pooling Layer 1: Pool size (2×2)
+Convolutional Layer 2: 24 filters, kernel size (8×8), ReLU activation
+Max-Pooling Layer 2: Pool size (2×2)
+Fully Connected (Dense) Layer:
+First Dense Layer with 256 neurons
+Second Dense Layer with 128 neurons
+Output Layer for classification
+### STEP 4:
+Define the loss function (e.g., Cross-Entropy Loss for classification) and optimizer (e.g., Adam or SGD).
 
+### STEP 5:
+Train the model by passing training data through the network, calculating the loss, and updating the weights using backpropagation.
+
+### STEP 6:
+Evaluate the trained model on the test dataset using accuracy, confusion matrix, and other performance metrics.
+
+### STEP 7:
+Make predictions on new images and analyze the results.
 ## PROGRAM
 
-### Name:
-### Register Number:
-```python
+### Name: bala murugan s
+### Register Number: 212223230027
+```
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
+from torchsummary import summary
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5,), (0.5,))
+])
+
+train_dataset = torchvision.datasets.FashionMNIST(
+    root="./data", train=True, transform=transform, download=True
+)
+test_dataset = torchvision.datasets.FashionMNIST(
+    root="./data", train=False, transform=transform, download=True
+)
+
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+print(f'Training samples: {len(train_dataset)}, Test samples: {len(test_dataset)}')
+
+
 class CNNClassifier(nn.Module):
     def __init__(self):
         super(CNNClassifier, self).__init__()
-        # write your code here
-
-
-
-
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
 
     def forward(self, x):
-        # write your code here
+        x = self.pool(torch.relu(self.conv1(x)))
+        x = self.pool(torch.relu(self.conv2(x)))
+        x = x.view(x.size(0), -1)
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = CNNClassifier().to(device)
 
+print('Name: bala murugan s')
+print('Register Number: 212223230027')
+summary(model, input_size=(1, 28, 28))
 
-```
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-```python
-# Initialize the Model, Loss Function, and Optimizer
-model =
-criterion =
-optimizer =
-
-```
-
-```python
-# Train the Model
 def train_model(model, train_loader, num_epochs=3):
+    model.train()
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device)
 
-    # write your code here
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-        
-        
-        
-        print('Name:        ')
-        print('Register Number:       ')
+            running_loss += loss.item()
+
+        print('Name: bala murugan s')
+        print('Register Number: 212223230027')
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader):.4f}')
 
+train_model(model, train_loader)
+
+def test_model(model, test_loader):
+    model.eval()
+    correct = 0
+    total = 0
+    all_preds = []
+    all_labels = []
+
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)
+
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+            all_preds.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    accuracy = correct / total
+    print('Name: bala murugan s')
+    print('Register Number: 212223230027')
+    print(f'Test Accuracy: {accuracy:.4f}')
+
+    cm = confusion_matrix(all_labels, all_preds)
+    plt.figure(figsize=(8,6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=test_dataset.classes,
+                yticklabels=test_dataset.classes)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title('Confusion Matrix')
+    plt.show()
+
+    print('Name: bala murugan s ')
+    print('Register Number: 212223230027')
+    print("Classification Report:")
+    print(classification_report(all_labels, all_preds, target_names=test_dataset.classes))
+
+test_model(model, test_loader)
+
+
+def predict_image(model, image_index, dataset):
+    model.eval()
+    image, label = dataset[image_index]
+    with torch.no_grad():
+        image_tensor = image.unsqueeze(0).to(device)
+        output = model(image_tensor)
+        _, predicted = torch.max(output, 1)
+
+    class_names = dataset.classes
+    print('Name: bala murugan s')
+    print('Register Number: 212223230027')
+    plt.imshow(image.squeeze(), cmap="gray")
+    plt.title(f'Actual: {class_names[label]}\nPredicted: {class_names[predicted.item()]}')
+    plt.axis("off")
+    plt.show()
+    print(f'Actual: {class_names[label]}, Predicted: {class_names[predicted.item()]}')
+
+# Example: Predict image at index 80
+predict_image(model, image_index=80, dataset=test_dataset)
 ```
 
 ## OUTPUT
-### Training Loss per Epoch
+<img width="525" height="396" alt="image" src="https://github.com/user-attachments/assets/e0997bae-71d5-46c0-ad93-d40da910d443" />
 
-Include the Training Loss per epoch
+### Training Loss per Epoch
+<img width="256" height="150" alt="image" src="https://github.com/user-attachments/assets/f1a1f28a-c482-445a-be99-47dc41755643" />
 
 ### Confusion Matrix
 
-Include confusion matrix here
+<img width="682" height="562" alt="image" src="https://github.com/user-attachments/assets/53fd3aba-0c29-4f15-b3bb-ec739e25bc93" />
+
+
 
 ### Classification Report
 
-Include Classification Report here
+<img width="433" height="328" alt="image" src="https://github.com/user-attachments/assets/c420219b-31d9-40db-8678-b8594d551354" />
+
+
 
 
 ### New Sample Data Prediction
+<img width="409" height="458" alt="image" src="https://github.com/user-attachments/assets/504dee67-da4b-41a1-8bdb-5536c8e35243" />
 
-Include your sample input and output 
+
 
 ## RESULT
-Include your result here.
+
+Thus, a convolutional deep neural network for image classification and to verify the response for new images is to developed successfully.
